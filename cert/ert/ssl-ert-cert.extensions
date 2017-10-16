@@ -1,0 +1,11 @@
+subjectKeyIdentifier = hash
+basicConstraints     = CA:FALSE
+keyUsage            = digitalSignature, keyEncipherment
+subjectAltName      = @alternate_names
+nsComment           = "OpenSSL Generated Certificate"
+
+[ alternate_names ]
+DNS.1       = *.system.drunkenbyte.xyz
+DNS.2       = *.apps.drunkenbyte.xyz
+DNS.3       = *.uaa.drunkenbyte.xyz
+DNS.4       = *.login.drunkenbyte.xyz

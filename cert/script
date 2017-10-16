@@ -1,0 +1,44 @@
+openssl genrsa -aes256 -out ca/ca.key 4096 chmod 400 ca/ca.key
+# remove passphrase
+openssl rsa -in ca/ca.key -out ca/ca.np.key
+# print CA key
+openssl rsa -in ca/ca.np.key -text
+
+# generate CA CERT
+openssl req -new -x509 -sha256 -days 730 -key ca/ca.np.key -out ca/ca.crt
+mod 444 ca/ca.crt
+
+# generate Server CSR
+openssl genrsa -out ert/ssl-ert.key 2048
+chmod 400 ert/ssl-ert.key
+openssl req -new -key ert/ssl-ert.key -sha256 -out ert/ssl-ert.csr -config ert/ssl-ert-cert.conf
+# generate ert CERT
+openssl x509 -req -days 365 -sha256 -in ert/ssl-ert.csr -CA ca/ca.crt -CAkey ca/ca.np.key -set_serial 1 -out ert/ssl-ert.crt
+chmod 444 ert/ssl-ert.crt
+# verify certificate
+openssl verify -CAfile ca/ca.crt ert/ssl-ert.crt
+openssl pkcs12 -export -chain -inkey ert/ssl-ert.key -in ert/ssl-ert.crt -CAfile ca/ca.crt -name ert -out ert/ssl-ert.p12
+keytool -v -importkeystore -srckeystore ert/ssl-ert.p12 -srcstoretype PKCS12 -destkeystore ert/ssl-ert.jks -deststoretype JKS
+
+# generate client certificate
+openssl genrsa -out client/heiko.key 2048
+# generate CSR
+openssl req -new -key client/heiko.key -out client/heiko.csr
+# generate CERT
+openssl x509 -req -days 365 -sha256 -in client/heiko.csr -CA ca/ca.crt -CAkey ca/ca.np.key -set_serial 2 -out client/heiko.crt
+openssl pkcs12 -export -chain -inkey client/heiko.key -in client/heiko.crt -CAfile ca/ca.crt -name heiko -out client/heiko.p12
+
+keytool -v -importcert -alias fabio -file client/heiko.crt -keystore client/heiko.jks -storepass s3cr3t -storetype JKS -noprompt
+keytool -v -importcert -alias ca -file ca/ca.crt -keystore client/heiko.jks -storepass s3cr3t -storetype JKS -noprompt
+
+# generate Server CSR
+openssl genrsa -out server/server.key 2048
+chmod 400 server/server.key
+openssl req -new -key server/server.key -sha256 -out server/server.csr -config server/server-cert.conf
+# generate Server CERT
+openssl x509 -req -days 365 -sha256 -in server/server.csr -CA ca/ca.crt -CAkey ca/ca.np.key -set_serial 1 -out server/server.crt
+chmod 444 server/server.crt
+# verify certificate
+openssl verify -CAfile ca/ca.crt server/server.crt
+openssl pkcs12 -export -chain -inkey server/server.key -in server/server.crt -CAfile ca/ca.crt -name server -out server/server.p12
+keytool -v -importkeystore -srckeystore server/server.p12 -srcstoretype PKCS12 -destkeystore server/server.jks -deststoretype JKS
